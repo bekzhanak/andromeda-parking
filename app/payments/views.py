@@ -1,7 +1,7 @@
-# views.py
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
@@ -13,12 +13,15 @@ from django.db import transaction
 from datetime import datetime
 
 
+LICENSE_PLATE_PATTERN = r"^[A-Z0-9]+$"
+
+
 class KASSA24PaymentView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         action = request.query_params.get('action')
         license_plate = request.query_params.get('number')
         amount = request.query_params.get('amount', None)
@@ -139,4 +142,127 @@ class KASSA24PaymentView(APIView):
             return Response({
                 "Code": "1",
                 "Message": "Неизвестный тип запроса"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class KaspiPaymentView(APIView):
+    @transaction.atomic
+    def get(self, request: Request) -> Response:
+        command = request.query_params.get("command")
+        txn_id = request.query_params.get("txn_id")
+        license_plate = request.query_params.get("account")
+        amount = request.query_params.get("sum")
+        date = request.query_params.get("txn_date")
+
+        if command == "check":
+            debts = ParkingSessionModel.objects.filter(
+                license_plate=license_plate,
+                is_paid=False
+            )
+
+            total_due = sum([debt.calculate_due_amount() for debt in debts])
+
+            if not debts or not total_due:
+                return Response({
+                    "txn_id": txn_id,
+                    "result": 1,
+                    "comment": "Not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            payment_attempt, created = PaymentAttempt.objects.get_or_create(
+                receipt=txn_id,
+                defaults={
+                    "license_plate": license_plate,
+                    "amount": total_due,
+                    "provider": PaymentProvider.KASPI,
+                }
+            )
+
+            if created:
+                for debt in debts:
+                    PaymentAttemptDebt.objects.create(
+                        payment_attempt=payment_attempt,
+                        content_type=ContentType.objects.get_for_model(debt),
+                        object_id=debt.id
+                    )
+
+            return Response({
+                "txn_id": txn_id,
+                "prv_txn_id": payment_attempt.id,
+                "result": 0,
+                "sum": f"{total_due:.2f}",
+                "comment": "Ok"
+            }, status=status.HTTP_200_OK)
+
+        if command == "pay":
+            existing_payment = Payment.objects.filter(receipt=txn_id).first()
+            if existing_payment:
+                return Response({
+                    "txn_id": txn_id,
+                    "prv_txn_id": existing_payment.id,
+                    "result": 3,
+                    "sum": f"{existing_payment.amount:.2f}",
+                    "comment": "Уже оплачено"
+                }, status=status.HTTP_200_OK)
+
+            payment_attempt = PaymentAttempt.objects.filter(
+                license_plate=license_plate,
+                status=PaymentAttempt.Status.PENDING,
+                provider=PaymentProvider.KASPI
+            ).first()
+
+            if not payment_attempt:
+                return Response({
+                    "txn_id": txn_id,
+                    "result": 1,
+                    "comment": "Not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            date = datetime.strptime(date, "%Y%m%d%H%M%S")
+            date = timezone.make_aware(date)
+
+            # Create payment record
+            payment = Payment.objects.create(
+                license_plate=license_plate,
+                receipt=txn_id,
+                amount=amount,
+                date=date,
+                provider=PaymentProvider.KASPI,
+                attempt=payment_attempt
+            )
+
+            # Apply payment to debts
+            remaining_amount = Decimal(amount)
+            for debt in payment_attempt.debts.all():
+                if remaining_amount <= 0:
+                    break
+                debt_due = debt.debt_object.calculate_due_amount()
+                to_apply = min(remaining_amount, debt_due)
+
+                PaymentApplication.objects.create(
+                    payment=payment,
+                    debt_object=debt.debt_object,
+                    amount_applied=to_apply
+                )
+
+                remaining_amount -= to_apply
+                debt.debt_object.update_amount()
+
+            # Mark payment attempt as paid
+            payment_attempt.status = PaymentAttempt.Status.PAID
+            payment_attempt.save()
+
+            return Response({
+                "txn_id": txn_id,
+                "prv_txn_id": payment.id,
+                "result": 0,
+                "sum": f"{Decimal(amount):.2f}",
+                "comment": "Ok"
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                "txn_id": txn_id,
+                "result": 5,
+                "comment": "Unknown command"
             }, status=status.HTTP_400_BAD_REQUEST)

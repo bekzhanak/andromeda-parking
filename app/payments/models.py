@@ -8,6 +8,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 class PaymentProvider(models.TextChoices):
     """Enumeration of supported payment providers."""
     KASSA24 = 'KASSA24', 'Kassa24'
+    KASPI = 'KASPI', 'Kaspi'
 
 
 class PaymentAttempt(models.Model):
@@ -17,6 +18,7 @@ class PaymentAttempt(models.Model):
         PAID = 'PAID', 'Paid'
 
     license_plate = models.CharField(max_length=20)
+    receipt = models.CharField(max_length=50, null=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
     provider = models.CharField(max_length=30, choices=PaymentProvider.choices)
