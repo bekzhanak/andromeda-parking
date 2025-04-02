@@ -27,7 +27,13 @@ SECRET_KEY = 'django-insecure-o2ey_hn(th)@&6#+e)a*x-!#minsv-laa9a))sb9)r@r#x&qca
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["195.49.212.178", "localhost", "127.0.0.1", "backend.sparespace.kz"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "backend.sparespace.kz"]
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://backend.sparespace.kz",
+    "https://*.sparespace.kz",
+]
 
 
 # Application definition
