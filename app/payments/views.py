@@ -145,7 +145,9 @@ class KASSA24PaymentView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class KaspiPaymentView(APIView):
+class BaseKaspiHalykPaymentView(APIView):
+    provider = None
+
     @transaction.atomic
     def get(self, request: Request) -> Response:
         command = request.query_params.get("command")
@@ -174,7 +176,7 @@ class KaspiPaymentView(APIView):
                 defaults={
                     "license_plate": license_plate,
                     "amount": total_due,
-                    "provider": PaymentProvider.KASPI,
+                    "provider": self.provider,
                 }
             )
 
@@ -208,7 +210,7 @@ class KaspiPaymentView(APIView):
             payment_attempt = PaymentAttempt.objects.filter(
                 license_plate=license_plate,
                 status=PaymentAttempt.Status.PENDING,
-                provider=PaymentProvider.KASPI
+                provider=self.provider
             ).first()
 
             if not payment_attempt:
@@ -227,7 +229,7 @@ class KaspiPaymentView(APIView):
                 receipt=txn_id,
                 amount=amount,
                 date=date,
-                provider=PaymentProvider.KASPI,
+                provider=self.provider,
                 attempt=payment_attempt
             )
 
@@ -266,3 +268,11 @@ class KaspiPaymentView(APIView):
                 "result": 5,
                 "comment": "Unknown command"
             }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class KaspiPaymentView(BaseKaspiHalykPaymentView):
+    provider = PaymentProvider.KASPI
+
+
+class HalykPaymentView(BaseKaspiHalykPaymentView):
+    provider = PaymentProvider.HALYK

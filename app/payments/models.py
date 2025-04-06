@@ -9,6 +9,7 @@ class PaymentProvider(models.TextChoices):
     """Enumeration of supported payment providers."""
     KASSA24 = 'KASSA24', 'Kassa24'
     KASPI = 'KASPI', 'Kaspi'
+    HALYK = 'HALYK', 'Halyk Bank'
 
 
 class PaymentAttempt(models.Model):
