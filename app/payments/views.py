@@ -169,7 +169,7 @@ class BaseKaspiHalykPaymentView(APIView):
                     "txn_id": txn_id,
                     "result": 1,
                     "comment": "Not found"
-                }, status=status.HTTP_404_NOT_FOUND)
+                }, status=status.HTTP_200_OK)
 
             payment_attempt, created = PaymentAttempt.objects.get_or_create(
                 receipt=txn_id,
@@ -218,7 +218,7 @@ class BaseKaspiHalykPaymentView(APIView):
                     "txn_id": txn_id,
                     "result": 1,
                     "comment": "Not found"
-                }, status=status.HTTP_404_NOT_FOUND)
+                }, status=status.HTTP_200_OK)
 
             date = datetime.strptime(date, "%Y%m%d%H%M%S")
             date = timezone.make_aware(date)
@@ -267,7 +267,7 @@ class BaseKaspiHalykPaymentView(APIView):
                 "txn_id": txn_id,
                 "result": 5,
                 "comment": "Unknown command"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_200_OK)
 
 
 class KaspiPaymentView(BaseKaspiHalykPaymentView):
