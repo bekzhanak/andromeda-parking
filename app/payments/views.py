@@ -89,7 +89,7 @@ class KASSA24PaymentView(APIView):
                 license_plate=license_plate,
                 status=PaymentAttempt.Status.PENDING,
                 provider=PaymentProvider.KASSA24
-            ).first()
+            ).order_by("-created_at").first()
 
             if not payment_attempt:
                 return Response({
@@ -211,7 +211,7 @@ class BaseKaspiHalykPaymentView(APIView):
                 license_plate=license_plate,
                 status=PaymentAttempt.Status.PENDING,
                 provider=self.provider
-            ).first()
+            ).order_by("-created_at").first()
 
             if not payment_attempt:
                 return Response({
