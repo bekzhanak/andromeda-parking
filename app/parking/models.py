@@ -25,6 +25,9 @@ class ParkingSessionModel(AbstractDebtModel):
     start_time = models.DateTimeField(default=timezone.now)
     end_time = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    parking_area = models.ForeignKey(
+        "ParkingArea", on_delete=models.SET_NULL, related_name='parking_sessions', null=True, blank=True
+    )
 
     def duration_minutes(self):
         end = self.end_time or timezone.now()
@@ -79,3 +82,47 @@ class Tariff(models.Model):
 
     def __str__(self):
         return f"{'Daily' if self.is_daily else f'<= {self.duration_minutes} min'}: {self.price}₸"
+
+
+class ParkingArea(models.Model):
+    """Represents a parking area where cameras are installed."""
+    name = models.CharField(max_length=255)
+
+
+class CameraConfiguration(models.Model):
+    """Stores configuration for each camera, including assigned parking area and direction (in/out)."""
+    IN = 'IN'
+    OUT = 'OUT'
+    CAMERA_DIRECTION_CHOICES = [
+        (IN, 'Entering'),
+        (OUT, 'Exiting'),
+    ]
+
+    camera_name = models.CharField(max_length=255, unique=True)
+    direction = models.CharField(max_length=3, choices=CAMERA_DIRECTION_CHOICES)
+    parking_area = models.ForeignKey(ParkingArea, on_delete=models.CASCADE, related_name='cameras')
+
+    def __str__(self):
+        return f"{self.camera_name} ({self.direction})"
+
+
+class ParkingEvent(models.Model):
+    """Represents a parking event (enter/exit) captured by a camera."""
+    parking_session = models.ForeignKey(ParkingSessionModel, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=3, choices=CameraConfiguration.CAMERA_DIRECTION_CHOICES)
+    event_time = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.event_type} event for {self.parking_session.license_plate} at {self.event_time}"
+
+
+class CarImage(models.Model):
+    """Stores images of vehicles entering or exiting the parking area."""
+    license_plate = models.CharField(max_length=20)
+    car_image = models.TextField(help_text="Base64 encoded image of the car.")
+    camera_configuration = models.ForeignKey(CameraConfiguration, on_delete=models.CASCADE, related_name='images')
+    parking_event = models.ForeignKey(ParkingEvent, on_delete=models.CASCADE, related_name="car_images")
+    captured_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Image for {self.license_plate} from {self.camera_configuration.camera_name} at {self.captured_at}"

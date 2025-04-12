@@ -21,4 +21,4 @@ python manage.py migrate
 echo "Migrations complete."
 
 echo "Starting Gunicorn server..."
-exec gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 4
+exec gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 9
