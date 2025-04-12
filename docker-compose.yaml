@@ -26,6 +26,8 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       COLLECT_STATIC: 1
+    env_file:
+      - .env
     expose:
       - "8000"
 

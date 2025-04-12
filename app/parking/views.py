@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import ParkingEventSerializer
 from .models import *
+from backend.settings import CV_API_KEY
+from rest_framework.exceptions import PermissionDenied
 
 
 class ParkingEventView(APIView):
@@ -12,6 +14,11 @@ class ParkingEventView(APIView):
     """
 
     def post(self, request: Request) -> Response:
+        api_key = request.headers.get("Authorization")
+
+        if api_key.split()[1] != CV_API_KEY:
+            raise PermissionDenied()
+
         serializer = ParkingEventSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
