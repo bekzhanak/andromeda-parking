@@ -16,7 +16,7 @@ class ParkingEventView(APIView):
     def post(self, request: Request) -> Response:
         api_key = request.headers.get("Authorization")
 
-        if api_key.split()[1] != CV_API_KEY:
+        if not api_key or api_key.split()[1] != CV_API_KEY:
             raise PermissionDenied()
 
         serializer = ParkingEventSerializer(data=request.data)
