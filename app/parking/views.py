@@ -5,7 +5,7 @@ from rest_framework import status
 from .serializers import ParkingEventSerializer
 from .models import *
 from backend.settings import CV_API_KEY
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 
 class ParkingEventView(APIView):
@@ -25,7 +25,11 @@ class ParkingEventView(APIView):
         license_plate = serializer.validated_data["license_plate_text"]
         car_image = serializer.validated_data["car_image"]
 
-        camera = CameraConfiguration.objects.get(camera_name=serializer.validated_data['camera_name'])
+        try:
+            camera = CameraConfiguration.objects.get(camera_name=serializer.validated_data['camera_name'])
+        except CameraConfiguration.DoesNotExist:
+            raise ValidationError("Camera not found.")
+
         if camera.direction == CameraConfiguration.IN:
 
             parking_session = ParkingSessionModel.objects.create(
