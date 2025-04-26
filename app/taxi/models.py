@@ -10,7 +10,7 @@ class TaxiArrivalReason(models.TextChoices):
 
 class TaxiWhitelist(models.Model):
     license_plate = models.CharField(max_length=20)
-    created_at = models.DateTimeField(default=timezone.now())
+    created_at = models.DateTimeField(default=timezone.now)
     parking_area = models.ForeignKey(ParkingArea, on_delete=models.CASCADE)
     arrival_reason = models.CharField(
         max_length=20,

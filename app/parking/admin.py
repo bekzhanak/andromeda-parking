@@ -39,3 +39,4 @@ class ParkingEventAdmin(admin.ModelAdmin):
 # Register the new models in the admin
 admin.site.register(ParkingArea, ParkingAreaAdmin)
 admin.site.register(ParkingEvent, ParkingEventAdmin)
+admin.site.register(TaxiEvent)
