@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
     'parking',
     'payments',
+    'taxi',
 ]
 
 MIDDLEWARE = [
