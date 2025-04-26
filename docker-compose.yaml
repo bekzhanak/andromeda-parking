@@ -30,6 +30,7 @@ services:
       - .env
     expose:
       - "8000"
+    entrypoint: ["/app/entrypoint.sh"]
 
   nginx:
     image: nginx:1.25
