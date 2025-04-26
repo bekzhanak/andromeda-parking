@@ -101,6 +101,7 @@ class CameraConfiguration(models.Model):
     camera_name = models.CharField(max_length=255, unique=True)
     direction = models.CharField(max_length=3, choices=CAMERA_DIRECTION_CHOICES)
     parking_area = models.ForeignKey(ParkingArea, on_delete=models.CASCADE, related_name='cameras')
+    is_for_taxi = models.BooleanField(default=False, help_text="Is this camera for taxi parking")
 
     def __str__(self):
         return f"{self.camera_name} ({self.direction})"
@@ -114,6 +115,17 @@ class ParkingEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} event for {self.parking_session.license_plate} at {self.event_time}"
+
+
+class TaxiEvent(models.Model):
+    """Represents a taxi event (enter/exit) captured by a camera."""
+    license_plate = models.CharField(max_length=20)
+    parking_area = models.ForeignKey(ParkingArea, on_delete=models.CASCADE, related_name='taxi_events')
+    event_type = models.CharField(max_length=3, choices=CameraConfiguration.CAMERA_DIRECTION_CHOICES)
+    event_time = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Taxi {self.event_type} event for {self.license_plate} at {self.event_time}"
 
 
 class CarImage(models.Model):

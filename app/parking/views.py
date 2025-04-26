@@ -6,6 +6,8 @@ from .serializers import ParkingEventSerializer
 from .models import *
 from backend.settings import CV_API_KEY
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from taxi.services import TaxiService
+from datetime import timedelta
 
 
 class ParkingEventView(APIView):
@@ -29,6 +31,38 @@ class ParkingEventView(APIView):
             camera = CameraConfiguration.objects.get(camera_name=serializer.validated_data['camera_name'])
         except CameraConfiguration.DoesNotExist:
             raise ValidationError("Camera not found.")
+
+        if camera.is_for_taxi:
+            if (camera.direction == CameraConfiguration.IN and
+                    TaxiService.is_whitelisted(license_plate, camera.parking_area)):
+
+                # TODO shlagbaum opening logic here
+                TaxiEvent.objects.create(
+                    license_plate=license_plate,
+                    parking_area=camera.parking_area,
+                    event_type=CameraConfiguration.IN
+                )
+
+                return Response({"message": "Taxi event recorded successfully."}, status=201)
+
+            elif camera.direction == CameraConfiguration.OUT:
+                taxi_event = TaxiEvent.objects.filter(
+                    license_plate=license_plate,
+                    parking_area=camera.parking_area,
+                    event_type=CameraConfiguration.IN,
+                    event_time__gte=timezone.now() - timedelta(hours=1)
+                ).last()
+
+                if taxi_event:
+                    # TODO shlagbaum opening logic here
+
+                    TaxiEvent.objects.create(
+                        license_plate=license_plate,
+                        parking_area=camera.parking_area,
+                        event_type=CameraConfiguration.OUT
+                    )
+
+                    return Response({"message": "Taxi event recorded successfully."}, status=201)
 
         if camera.direction == CameraConfiguration.IN:
 

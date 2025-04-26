@@ -56,5 +56,42 @@ services:
     command: >
       "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew; done"
 
+  celery_worker:
+    build:
+      context: ./app
+    container_name: celery_worker
+    command: celery -A backend worker --loglevel=info
+    depends_on:
+      - backend
+      - db
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=django-db
+    volumes:
+      - ./app:/app
+
+  celery_beat:
+    build:
+      context: ./app
+    container_name: celery_beat
+    command: celery -A backend beat --loglevel=info
+    depends_on:
+      - backend
+      - db
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=django-db
+    volumes:
+      - ./app:/app
+
+  redis:
+    image: redis:6
+    container_name: redis
+    command: ["redis-server", "--replicaof", "no", "one"]
+    expose:
+      - "6379"
+
 volumes:
   postgres_data:
