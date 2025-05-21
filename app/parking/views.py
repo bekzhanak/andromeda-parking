@@ -1,3 +1,5 @@
+import os
+
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -8,6 +10,8 @@ from backend.settings import CV_API_KEY
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from taxi.services import TaxiService
 from datetime import timedelta
+
+from app.parking.utils import control_barrier
 
 
 class ParkingEventView(APIView):
@@ -36,7 +40,12 @@ class ParkingEventView(APIView):
             if (camera.direction == CameraConfiguration.IN and
                     TaxiService.is_whitelisted(license_plate, camera.parking_area)):
 
-                # TODO shlagbaum opening logic here
+                control_barrier(
+                    jetson_ip=camera.parking_area.ip_address,
+                    camera_ip=camera.ip_address,
+                    command="open"
+                )
+
                 TaxiEvent.objects.create(
                     license_plate=license_plate,
                     parking_area=camera.parking_area,
@@ -54,7 +63,11 @@ class ParkingEventView(APIView):
                 ).last()
 
                 if taxi_event:
-                    # TODO shlagbaum opening logic here
+                    control_barrier(
+                        jetson_ip=camera.parking_area.ip_address,
+                        camera_ip=camera.ip_address,
+                        command="open"
+                    )
 
                     TaxiEvent.objects.create(
                         license_plate=license_plate,
@@ -83,7 +96,11 @@ class ParkingEventView(APIView):
                 parking_event=parking_event
             )
 
-            # TODO shlagbaum opening logic here
+            control_barrier(
+                jetson_ip=camera.parking_area.ip_address,
+                camera_ip=camera.ip_address,
+                command="open"
+            )
 
             return Response({"message": "Parking event recorded successfully."}, status=201)
 
@@ -116,7 +133,11 @@ class ParkingEventView(APIView):
                     debt.is_active = False
                     debt.save(update_fields=["is_active", "is_paid"])
 
-                # TODO shlagbaum opening logic here
+                control_barrier(
+                    jetson_ip=camera.parking_area.ip_address,
+                    camera_ip=camera.ip_address,
+                    command="open"
+                )
 
                 return Response({"message": "Parking event recorded successfully."}, status=201)
 

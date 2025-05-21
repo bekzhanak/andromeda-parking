@@ -87,6 +87,7 @@ class Tariff(models.Model):
 class ParkingArea(models.Model):
     """Represents a parking area where cameras are installed."""
     name = models.CharField(max_length=255)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
 
 
 class CameraConfiguration(models.Model):
@@ -102,6 +103,7 @@ class CameraConfiguration(models.Model):
     direction = models.CharField(max_length=3, choices=CAMERA_DIRECTION_CHOICES)
     parking_area = models.ForeignKey(ParkingArea, on_delete=models.CASCADE, related_name='cameras')
     is_for_taxi = models.BooleanField(default=False, help_text="Is this camera for taxi parking")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.camera_name} ({self.direction})"
