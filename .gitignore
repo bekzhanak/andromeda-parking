@@ -98,3 +98,6 @@ pyrightconfig.json
 db.sqlite3
 media/
 staticfiles/
+
+private-credentials-partner.txt
+private-credentials-yandex.txt
