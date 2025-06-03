@@ -11,7 +11,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from taxi.services import TaxiService
 from datetime import timedelta
 
-from app.parking.utils import control_barrier
+from parking.utils import control_barrier
 
 
 class ParkingEventView(APIView):
